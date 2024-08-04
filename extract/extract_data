@@ -1,0 +1,59 @@
+import json
+import os
+import spotipy
+import logging
+from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
+import boto3
+import datetime
+import time
+
+def lambda_handler(event, context):
+    # Setup logging 
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger()
+    
+    # Authentication
+    client_id = os.environ.get("SPOTIFY_CLIENT_ID")
+    client_secret = os.environ.get("SPOTIFY_CLIENT_SECRET")
+    logger.info("Authenticating the client")
+    client_credentials_manager = SpotifyClientCredentials(client_id=client_id , client_secret=client_secret)
+    
+    # Authorization
+    logger.info("Authorizing using the client")
+    sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
+    
+    # Top Songs Global 
+    playlist_link = os.environ.get("SPOTIFY_TOP_GLOBAL_LINK")
+    playlist_uri = playlist_link.split("/")[-1]
+    logger.info("Get data for the playlist %s", playlist_uri)
+    
+    # spotify top 50 songs
+    data = sp.playlist_tracks(playlist_uri)
+    spotify_data = json.dumps(data)
+    
+    # Create JSON file 
+    current_time = datetime.datetime.now()
+    spotify_file = "spotify_data_" + str(current_time.year) + "_" + str(current_time.month) + "_" + str(current_time.day) + ".json"
+
+    # Upload data to s3
+    s3_client = boto3.client('s3')
+    s3_client.put_object(
+        Bucket=os.environ.get("S3_BUCKET"),
+        Key=os.environ.get("S3_KEY") + spotify_file,
+        Body=spotify_data
+    )
+    # Introduce delay of 15 seconds to make sure data is uploaded to s3
+    time.sleep(15)
+    
+    # Create glue object to auto trigger trasnformation glue job
+    glue = boto3.client("glue")
+    glue_job_name = os.environ.get("GLUE_JOB_NAME")
+    
+    try:
+        runId = glue.start_job_run(JobName=glue_job_name)
+        status = glue.get_job_run(JobName=glue_job_name, RunId = runId["JobRunId"])
+        # print(f"Job Status: {status["JobRun"]["JobRunState"]}, Job Run ID: {runId["JobRunId"]}")
+    
+    except Exception as e:
+        print(e)
+
