@@ -1,0 +1,45 @@
+{
+  "name" : "spotify_data_trasnformation_job",
+  "jobMode" : "SCRIPT",
+  "description" : "",
+  "role" : "arn:aws:iam::010928223915:role/spotify_glue_IAM_role",
+  "executionProperty" : {
+    "maxConcurrentRuns" : 1
+  },
+  "command" : {
+    "name" : "glueetl",
+    "scriptLocation" : "s3://aws-glue-assets-010928223915-us-east-1/scripts/spotify_data_trasnformation_job.py",
+    "pythonVersion" : "3"
+  },
+  "defaultArguments" : {
+    "--BUCKET_NAME" : "spotify-etl-project-shrini ",
+    "--S3_RAW_PATH" : "s3://spotify-etl-project-shrini/raw_data/to_processed/",
+    "--enable-glue-datacatalog" : "true",
+    "--job-bookmark-option" : "job-bookmark-disable",
+    "--TempDir" : "s3://aws-glue-assets-010928223915-us-east-1/temporary/",
+    "--TO_BE_PROCESSED" : "raw_data/to_processed/",
+    "--S3_TRANSFORMED_PATH" : "s3://spotify-etl-project-shrini/transformed_data",
+    "--enable-metrics" : "true",
+    "--enable-spark-ui" : "true",
+    "--spark-event-logs-path" : "s3://aws-glue-assets-010928223915-us-east-1/sparkHistoryLogs/",
+    "--enable-job-insights" : "false",
+    "--enable-observability-metrics" : "true",
+    "--enable-continuous-cloudwatch-log" : "true",
+    "--job-language" : "python",
+    "--PROCESSED" : "raw_data/processed/"
+  },
+  "maxRetries" : 0,
+  "allocatedCapacity" : 5,
+  "timeout" : 2880,
+  "maxCapacity" : 5.0,
+  "glueVersion" : "4.0",
+  "numberOfWorkers" : 5,
+  "workerType" : "G.1X",
+  "executionClass" : "STANDARD",
+  "sourceControlDetails" : {
+    "provider" : "GITHUB",
+    "repository" : "spotify_data_etl",
+    "branch" : "main",
+    "folder" : "transform"
+  }
+}
